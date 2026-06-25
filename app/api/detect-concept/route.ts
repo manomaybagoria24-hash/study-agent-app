@@ -4,7 +4,12 @@ import { anthropic } from '@ai-sdk/anthropic';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const userMessage = typeof body?.userMessage === 'string' ? body.userMessage : '';
+    const userMessage =
+      typeof body?.userMessage === 'string'
+        ? body.userMessage
+        : typeof body?.message === 'string'
+        ? body.message
+        : '';
 
     if (!userMessage) {
       return new Response(
@@ -22,17 +27,20 @@ Message:
 ${userMessage}`;
 
     const result = await generateText({
-      model: anthropic('claude-sonnet-4-5'),
+      model: anthropic('claude-haiku-4-5-20251001'),
       prompt,
       temperature: 0,
-      maxTokens: 200,
     });
 
     const rawText = result.text.trim();
-    let parsed = { subject: '', concept: '' };
+    let parsed: { subject: string; concept: string } = { subject: '', concept: '' };
 
     try {
-      parsed = JSON.parse(rawText);
+      const json = JSON.parse(rawText);
+      parsed = {
+        subject: typeof json?.subject === 'string' ? json.subject : '',
+        concept: typeof json?.concept === 'string' ? json.concept : '',
+      };
     } catch (error) {
       console.error('detect-concept parse error:', error, rawText);
     }
