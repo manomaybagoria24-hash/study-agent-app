@@ -35,8 +35,20 @@ ${userMessage}`;
     const rawText = result.text.trim();
     let parsed: { subject: string; concept: string } = { subject: '', concept: '' };
 
+    const normalizeJsonText = (text: string) => {
+      let normalized = text.trim();
+
+      if (normalized.startsWith('```')) {
+        normalized = normalized.replace(/^```[\s\S]*?\n/, '');
+        normalized = normalized.replace(/```$/, '');
+      }
+
+      const jsonMatch = normalized.match(/\{[\s\S]*\}/);
+      return jsonMatch ? jsonMatch[0].trim() : normalized;
+    };
+
     try {
-      const json = JSON.parse(rawText);
+      const json = JSON.parse(normalizeJsonText(rawText));
       parsed = {
         subject: typeof json?.subject === 'string' ? json.subject : '',
         concept: typeof json?.concept === 'string' ? json.concept : '',

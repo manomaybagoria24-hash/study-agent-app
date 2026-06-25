@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServer } from '@/lib/supabase-server';
 
 type ReqBody = {
   subject: string;
@@ -34,28 +34,36 @@ export async function POST(request: Request) {
 
     const now = new Date().toISOString();
 
+    const normalizeArray = (value?: string[]) => (Array.isArray(value) && value.length > 0 ? value : null);
+
     const payload = {
       subject,
       concept,
       mastery_level: masteryLevel ?? 'In Progress',
       overview_gist: overviewGist ?? null,
-      deep_dive_gist: deepDiveGist ?? null,
-      strong_areas: strongAreas ?? null,
-      weak_areas: weakAreas ?? null,
-      next_steps: nextSteps ?? null,
+      deep_dive_gist: normalizeArray(deepDiveGist),
+      strong_areas: normalizeArray(strongAreas),
+      weak_areas: normalizeArray(weakAreas),
+      next_steps: normalizeArray(nextSteps),
       notes: notes ?? null,
       last_updated: now,
     } as const;
 
-    const { data, error } = await supabase
+    const supabaseServer = getSupabaseServer();
+
+    if (!supabaseServer) {
+      console.error('Missing SUPABASE_SERVICE_ROLE_KEY')
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    const { data, error } = await supabaseServer
       .from('concepts')
-      .upsert(payload as any, { onConflict: 'subject,concept' as any })
-      .select()
-      .single();
+      .upsert(payload as any, { onConflict: ['subject', 'concept'] as any })
+      .select();
 
     if (error) {
       console.error('Supabase upsert error:', error);
-      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+      return NextResponse.json({ error: error.message || 'Database error' }, { status: 500 });
     }
 
     return NextResponse.json({ data }, { status: 200 });
