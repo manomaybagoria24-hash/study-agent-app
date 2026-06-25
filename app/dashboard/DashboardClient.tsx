@@ -3,20 +3,60 @@
 import React, { useEffect, useState } from "react";
 import ConceptCardClient from "./ConceptCardClient";
 
-type ConceptRow = Record<string, any>;
+type Concept = {
+  id: string;
+  subject: string;
+  concept: string;
+  mastery_level: string;
+  overview_gist?: string | null;
+  deep_dive_gist?: string[] | null;
+  strong_areas?: string[] | null;
+  weak_areas?: string[] | null;
+  next_steps?: string[] | null;
+  notes?: string | null;
+  last_updated?: string | null;
+};
+
+type LocalConcept = {
+  id: string;
+  subject: string;
+  concept: string;
+  masteryLevel: string;
+  overviewGist: string;
+  deepDiveGist: string[];
+  strongAreas: string[];
+  weakAreas: string[];
+  nextSteps: string[];
+  notes: string;
+  lastUpdated: string;
+};
 
 const LOCAL_SAVED_CONCEPTS_KEY = "study-agent-app:local-saved-concepts";
 
-export default function DashboardClient({ serverRows }: { serverRows: ConceptRow[] }) {
-  const [localRows, setLocalRows] = useState<ConceptRow[]>([]);
+const normalizeLocalConcept = (local: LocalConcept): Concept => ({
+  id: local.id,
+  subject: local.subject,
+  concept: local.concept,
+  mastery_level: local.masteryLevel,
+  overview_gist: local.overviewGist,
+  deep_dive_gist: local.deepDiveGist,
+  strong_areas: local.strongAreas,
+  weak_areas: local.weakAreas,
+  next_steps: local.nextSteps,
+  notes: local.notes,
+  last_updated: local.lastUpdated,
+});
+
+export default function DashboardClient({ serverRows }: { serverRows: Concept[] }) {
+  const [localRows, setLocalRows] = useState<Concept[]>([]);
 
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(LOCAL_SAVED_CONCEPTS_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved) as ConceptRow[];
+        const parsed = JSON.parse(saved) as LocalConcept[];
         if (Array.isArray(parsed)) {
-          setLocalRows(parsed);
+          setLocalRows(parsed.map(normalizeLocalConcept));
         }
       }
     } catch (error) {
